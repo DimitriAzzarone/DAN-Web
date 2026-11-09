@@ -1,0 +1,1899 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Dan</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500&display=swap">
+
+<style>
+/* ── DAN · HUD Interface v2 ─────────────────────────────────────── */
+:root {
+  --bg:         #030d1a;
+  --bg2:        #071428;
+  --panel:      rgba(0, 20, 50, 0.85);
+  --border:     rgba(0, 200, 255, 0.18);
+  --cyan:       #00c8ff;
+  --cyan-dim:   rgba(0, 200, 255, 0.35);
+  --cyan-glow:  rgba(0, 200, 255, 0.12);
+  --fg:         #e0f4ff;
+  --fg-dim:     rgba(224, 244, 255, 0.55);
+  --user-bg:    rgba(0, 150, 200, 0.18);
+  --dan-bg:     rgba(0, 30, 60, 0.6);
+  --error:      #ff4466;
+  --ok:         #00ff99;
+  --warn:       #ffaa00;
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 15px;
+  overflow: hidden;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0;
+}
+
+/* ── HEADER ── */
+.header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: max(env(safe-area-inset-top, 0px), 10px) 0 10px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.header-logo {
+  font-family: 'Orbitron', monospace;
+  font-weight: 900;
+  font-size: 20px;
+  color: var(--cyan);
+  letter-spacing: 4px;
+  text-shadow: 0 0 20px var(--cyan), 0 0 40px var(--cyan-dim);
+}
+
+.header-status {
+  font-family: 'Orbitron', monospace;
+  font-size: 8px;
+  color: var(--fg-dim);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.status-dot {
+  display: inline-block;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--cyan);
+  box-shadow: 0 0 8px var(--cyan);
+  margin-right: 5px;
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* model selector pill */
+.model-pill {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+.model-pill select {
+  background: transparent;
+  border: none;
+  color: var(--cyan);
+  font-family: 'Orbitron', monospace;
+  font-size: 7px;
+  letter-spacing: 1px;
+  outline: none;
+  cursor: pointer;
+}
+.model-pill select option { background: #071428; color: var(--fg); }
+
+/* ── PANEL TABS (top of HUD area) ── */
+.panel-tabs {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+  padding: 6px 0 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.panel-tabs::-webkit-scrollbar { display: none; }
+
+.tab-btn {
+  font-family: 'Orbitron', monospace;
+  font-size: 7px;
+  letter-spacing: 1.5px;
+  padding: 5px 10px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--fg-dim);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+.tab-btn.active, .tab-btn:hover {
+  background: var(--cyan-dim);
+  border-color: var(--cyan);
+  color: var(--fg);
+}
+
+/* ── MESSAGES ── */
+.messages {
+  flex: 1;
+  overflow-y: auto;
+  padding-block: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.msg {
+  display: flex;
+  flex-direction: column;
+  max-width: 85%;
+  animation: msg-in 0.25s ease-out;
+}
+
+@keyframes msg-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.msg.user { align-self: flex-end; align-items: flex-end; }
+.msg.dan  { align-self: flex-start; align-items: flex-start; }
+
+.msg-label {
+  font-family: 'Orbitron', monospace;
+  font-size: 7px;
+  letter-spacing: 2px;
+  color: var(--fg-dim);
+  margin-bottom: 3px;
+  text-transform: uppercase;
+}
+.msg.dan .msg-label { color: var(--cyan); }
+
+.msg-bubble {
+  padding: 10px 14px;
+  border-radius: 12px;
+  line-height: 1.55;
+  font-size: 14px;
+  border: 1px solid var(--border);
+}
+.msg.user .msg-bubble {
+  background: var(--user-bg);
+  border-color: var(--cyan-dim);
+  border-radius: 12px 12px 2px 12px;
+}
+.msg.dan .msg-bubble {
+  background: var(--dan-bg);
+  border-radius: 12px 12px 12px 2px;
+}
+
+/* file attachment chip in bubble */
+.attach-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: rgba(0,200,255,0.1);
+  border: 1px solid var(--cyan-dim);
+  border-radius: 8px; padding: 3px 8px;
+  font-size: 11px; margin-bottom: 6px;
+}
+
+/* thinking animation */
+.thinking-dots span {
+  display: inline-block;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--cyan);
+  margin: 0 2px;
+  animation: bounce 1.2s ease-in-out infinite;
+}
+.thinking-dots span:nth-child(2) { animation-delay: 0.2s; }
+.thinking-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes bounce {
+  0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+  40% { transform: translateY(-6px); opacity: 1; }
+}
+
+/* ── HUD AREA ── */
+.hud-area {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-block: 8px;
+  gap: 10px;
+  border-top: 1px solid var(--border);
+}
+
+/* Orb */
+.orb-wrap {
+  position: relative;
+  width: 160px; height: 160px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.orb-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%; height: 100%;
+}
+
+.orb-label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Orbitron', monospace;
+  font-weight: 900;
+  font-size: 22px;
+  color: #fff;
+  text-shadow: 0 0 15px var(--cyan);
+  letter-spacing: 3px;
+  pointer-events: none;
+  user-select: none;
+}
+
+.orb-sublabel {
+  font-size: 6px;
+  font-weight: 400;
+  letter-spacing: 2px;
+  color: var(--cyan);
+  margin-top: 2px;
+  opacity: 0.8;
+}
+
+/* ── INPUT ROW ── */
+.input-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+  width: 100%;
+}
+
+/* File upload btn */
+.upload-btn {
+  width: 42px; height: 42px;
+  border-radius: 10px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  color: var(--fg-dim);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s;
+  position: relative;
+}
+.upload-btn:hover { border-color: var(--cyan); color: var(--cyan); }
+.upload-btn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.upload-btn svg { width: 18px; height: 18px; fill: currentColor; pointer-events: none; }
+
+.input-box {
+  flex: 1;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  color: var(--fg);
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  resize: none;
+  min-height: 42px; max-height: 100px;
+  outline: none;
+  line-height: 1.4;
+  transition: border-color 0.2s;
+}
+.input-box::placeholder { color: var(--fg-dim); }
+.input-box:focus { border-color: var(--cyan-dim); }
+
+.send-btn {
+  width: 42px; height: 42px;
+  border-radius: 10px;
+  background: var(--cyan-dim);
+  border: 1px solid var(--cyan);
+  color: var(--fg);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.2s, box-shadow 0.2s;
+}
+.send-btn:hover, .send-btn:active {
+  background: rgba(0,200,255,0.3);
+  box-shadow: 0 0 12px var(--cyan-dim);
+}
+.send-btn svg { width: 18px; height: 18px; fill: var(--cyan); }
+
+/* ── SIDE PANEL (overlay) ── */
+.side-panel {
+  position: fixed;
+  inset: 0;
+  background: rgba(3,13,26,0.97);
+  z-index: 80;
+  display: flex;
+  flex-direction: column;
+  padding: max(env(safe-area-inset-top,0px),16px) max(16px,env(safe-area-inset-right,0px)) max(env(safe-area-inset-bottom,0px),16px) max(16px,env(safe-area-inset-left,0px));
+  gap: 14px;
+  overflow-y: auto;
+  transition: transform 0.3s;
+}
+.side-panel[hidden] { display: none; }
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.panel-title {
+  font-family: 'Orbitron', monospace;
+  font-size: 14px;
+  color: var(--cyan);
+  letter-spacing: 3px;
+}
+
+.close-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--fg-dim);
+  cursor: pointer;
+  padding: 6px 12px;
+  font-size: 12px;
+}
+.close-btn:hover { border-color: var(--cyan); color: var(--fg); }
+
+/* ── GENERIC SECTION CARD ── */
+.section-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.section-label {
+  font-family: 'Orbitron', monospace;
+  font-size: 8px;
+  letter-spacing: 2px;
+  color: var(--cyan);
+  text-transform: uppercase;
+}
+
+/* form controls */
+.ctrl-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ctrl-label {
+  font-size: 12px;
+  color: var(--fg-dim);
+  flex: 1;
+}
+
+/* toggle switch */
+.toggle {
+  position: relative;
+  width: 44px; height: 24px;
+  flex-shrink: 0;
+}
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle-slider {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,200,255,0.1);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+.toggle-slider::before {
+  content: '';
+  position: absolute;
+  width: 18px; height: 18px;
+  left: 2px; top: 2px;
+  background: var(--fg-dim);
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+.toggle input:checked + .toggle-slider { background: var(--cyan-dim); border-color: var(--cyan); }
+.toggle input:checked + .toggle-slider::before { transform: translateX(20px); background: var(--cyan); }
+
+.dan-btn {
+  background: var(--cyan-dim);
+  border: 1px solid var(--cyan);
+  border-radius: 8px;
+  color: var(--fg);
+  font-family: 'Orbitron', monospace;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-transform: uppercase;
+}
+.dan-btn:hover { background: rgba(0,200,255,0.3); box-shadow: 0 0 12px var(--cyan-dim); }
+.dan-btn.danger { background: rgba(255,68,102,0.2); border-color: var(--error); }
+.dan-btn.ok { background: rgba(0,255,153,0.15); border-color: var(--ok); color: var(--ok); }
+
+.dan-input {
+  background: rgba(0,0,0,0.3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: var(--fg);
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  outline: none;
+  width: 100%;
+}
+.dan-input:focus { border-color: var(--cyan-dim); }
+
+.dan-textarea {
+  background: rgba(0,0,0,0.3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: var(--fg);
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  outline: none;
+  width: 100%;
+  min-height: 80px;
+  resize: vertical;
+  line-height: 1.4;
+}
+
+.status-line {
+  font-size: 11px;
+  color: var(--fg-dim);
+  font-style: italic;
+  min-height: 16px;
+}
+.status-line.ok  { color: var(--ok); }
+.status-line.err { color: var(--error); }
+.status-line.warn { color: var(--warn); }
+
+/* job item */
+.job-item {
+  background: rgba(0,0,0,0.3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.job-item .job-title { font-weight: 600; color: var(--cyan); margin-bottom: 4px; }
+.job-item .job-actions { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+
+/* ── API KEY OVERLAY ── */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(3,13,26,0.97);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 32px max(16px, env(safe-area-inset-left, 0px));
+  z-index: 100;
+}
+
+.overlay-title {
+  font-family: 'Orbitron', monospace;
+  font-size: 24px;
+  font-weight: 900;
+  color: var(--cyan);
+  text-shadow: 0 0 30px var(--cyan);
+  letter-spacing: 6px;
+}
+
+.overlay-sub {
+  font-size: 13px;
+  color: var(--fg-dim);
+  text-align: center;
+  max-width: 300px;
+  line-height: 1.6;
+}
+
+.overlay input {
+  width: 100%;
+  max-width: 340px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 16px;
+  color: var(--fg);
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  outline: none;
+  text-align: center;
+}
+.overlay input:focus { border-color: var(--cyan-dim); }
+
+.overlay-btn {
+  background: var(--cyan-dim);
+  border: 1px solid var(--cyan);
+  border-radius: 10px;
+  color: var(--fg);
+  font-family: 'Orbitron', monospace;
+  font-size: 11px;
+  letter-spacing: 2px;
+  padding: 12px 28px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.overlay-btn:hover { background: rgba(0,200,255,0.3); box-shadow: 0 0 20px var(--cyan-dim); }
+
+.safe-bottom {
+  height: max(env(safe-area-inset-bottom, 0px), 6px);
+  flex-shrink: 0;
+}
+
+/* voice banner */
+.voice-banner {
+  position: fixed;
+  top: max(env(safe-area-inset-top, 0px), 12px);
+  right: 16px;
+  background: var(--cyan);
+  color: #000;
+  font-family: 'Orbitron', monospace;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  cursor: pointer;
+  z-index: 50;
+  box-shadow: 0 0 16px var(--cyan);
+  animation: pulse-banner 1.5s ease-in-out infinite;
+  white-space: nowrap;
+}
+@keyframes pulse-banner {
+  0%,100% { box-shadow: 0 0 16px var(--cyan); }
+  50% { box-shadow: 0 0 36px var(--cyan), 0 0 60px var(--cyan-dim); }
+}
+
+/* confirmation modal */
+.confirm-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(3,13,26,0.95);
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.confirm-modal[hidden] { display: none; }
+
+.confirm-box {
+  background: var(--bg2);
+  border: 1px solid var(--cyan-dim);
+  border-radius: 14px;
+  padding: 20px;
+  max-width: 380px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.confirm-title {
+  font-family: 'Orbitron', monospace;
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--cyan);
+}
+.confirm-body {
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  max-height: 200px;
+  overflow-y: auto;
+}
+.confirm-actions { display: flex; gap: 10px; }
+</style>
+
+<!-- Voice unlock banner -->
+<div class="voice-banner" id="voiceBanner" onclick="unlockVoice()">🎙 TOCCA PER ATTIVARE LA VOCE</div>
+
+<!-- API key overlay -->
+<div class="overlay" id="overlay">
+  <div class="overlay-title">D A N</div>
+  <div class="overlay-sub">Il tuo assistente personale.<br>Inserisci le tue API key per iniziare.</div>
+  <input type="password" id="apiKeyInput" placeholder="Groq API key (gsk_...)" autocomplete="off">
+  <input type="password" id="tavKeyInput" placeholder="Tavily key (tvly-...) – opzionale" autocomplete="off" style="margin-top:-8px">
+  <button class="overlay-btn" onclick="startApp()">ATTIVA DAN</button>
+</div>
+
+<!-- Main app -->
+<div class="header">
+  <span class="header-logo">DAN</span>
+  <span class="header-status"><span class="status-dot"></span><span id="statusText">ONLINE</span></span>
+
+  <!-- Model selector -->
+  <div class="model-pill">
+    <select id="modelSelect" onchange="onModelChange()">
+      <option value="groq">GROQ ONLINE</option>
+      <option value="qwen">QWEN LOCAL</option>
+      <option value="auto">AUTO</option>
+    </select>
+  </div>
+
+  <!-- Settings btn -->
+  <button class="dan-btn" onclick="showPanel('settings')" style="margin-left:4px;padding:5px 10px;font-size:7px;">⚙</button>
+</div>
+
+<!-- Panel tabs -->
+<div class="panel-tabs" id="panelTabs">
+  <button class="tab-btn active" onclick="showMainChat()">CHAT</button>
+  <button class="tab-btn" onclick="showPanel('memory')">MEMORIA</button>
+  <button class="tab-btn" onclick="showPanel('files')">FILE</button>
+  <button class="tab-btn" onclick="showPanel('phone')">TELEFONO</button>
+  <button class="tab-btn" onclick="showPanel('termux')">TERMUX</button>
+  <button class="tab-btn" onclick="showPanel('categories')">+ CATEGORIE</button>
+  <!-- tab dinamici categorie utente -->
+  <span id="dynTabs"></span>
+</div>
+
+<div class="messages" id="messages"></div>
+
+<div class="hud-area">
+  <div class="orb-wrap" id="orbWrap" onclick="toggleVoice()">
+    <canvas class="orb-canvas" id="orbCanvas"></canvas>
+    <div class="orb-label">
+      DAN
+      <span class="orb-sublabel" id="orbSublabel">TOCCA PER PARLARE</span>
+    </div>
+  </div>
+
+  <div class="input-row">
+    <!-- File upload -->
+    <label class="upload-btn" title="Allega file">
+      <input type="file" id="fileInput" multiple accept=".pdf,.txt,.md,.csv,.jpg,.jpeg,.png,.webp" onchange="handleFileUpload(this)">
+      <svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 7V3.5L18.5 9H13zM8 13h8v1H8zm0 2h8v1H8zm0 2h5v1H8z"/></svg>
+    </label>
+    <textarea class="input-box" id="textInput" placeholder="Scrivi a Dan..." rows="1"
+      onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+    <button class="send-btn" onclick="sendText()">
+      <svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>
+    </button>
+  </div>
+</div>
+
+<div class="safe-bottom"></div>
+
+<!-- ═══ PANELS ═══ -->
+
+<!-- SETTINGS PANEL -->
+<div class="side-panel" id="panel-settings" hidden>
+  <div class="panel-header">
+    <span class="panel-title">IMPOSTAZIONI</span>
+    <button class="close-btn" onclick="closePanel()">✕ CHIUDI</button>
+  </div>
+
+  <div class="section-card">
+    <div class="section-label">Modello LLM</div>
+    <div class="ctrl-row">
+      <span class="ctrl-label">Groq Online (qwen3.8-27b)</span>
+      <label class="toggle"><input type="radio" name="llmMode" value="groq" id="llmGroq" checked onchange="setLLMMode('groq')"><span class="toggle-slider"></span></label>
+    </div>
+    <div class="ctrl-row">
+      <span class="ctrl-label">Qwen 3.1 Locale (Termux)</span>
+      <label class="toggle"><input type="radio" name="llmMode" value="qwen" id="llmQwen" onchange="setLLMMode('qwen')"><span class="toggle-slider"></span></label>
+    </div>
+    <div class="ctrl-row">
+      <span class="ctrl-label">Auto (Groq → locale se offline)</span>
+      <label class="toggle"><input type="radio" name="llmMode" value="auto" id="llmAuto" onchange="setLLMMode('auto')"><span class="toggle-slider"></span></label>
+    </div>
+  </div>
+
+  <div class="section-card">
+    <div class="section-label">Server Termux</div>
+    <div class="ctrl-row">
+      <span class="ctrl-label">URL server</span>
+    </div>
+    <input class="dan-input" id="serverUrlInput" placeholder="http://localhost:8765" value="http://localhost:8765">
+    <button class="dan-btn" onclick="saveServerUrl()">SALVA URL</button>
+    <div class="status-line" id="serverStatus">In attesa di test...</div>
+    <button class="dan-btn" onclick="testServer()">TEST CONNESSIONE</button>
+  </div>
+
+  <div class="section-card">
+    <div class="section-label">API Keys</div>
+    <input class="dan-input" id="groqKeyEdit" type="password" placeholder="Groq API key">
+    <input class="dan-input" id="tavKeyEdit" type="password" placeholder="Tavily key (opzionale)" style="margin-top:6px">
+    <button class="dan-btn" onclick="saveKeys()">SALVA KEYS</button>
+  </div>
+
+  <div class="section-card">
+    <div class="section-label">Dati</div>
+    <button class="dan-btn danger" onclick="clearHistory()">CANCELLA CRONOLOGIA</button>
+  </div>
+</div>
+
+<!-- MEMORY PANEL -->
+<div class="side-panel" id="panel-memory" hidden>
+  <div class="panel-header">
+    <span class="panel-title">MEMORIA DAN</span>
+    <button class="close-btn" onclick="closePanel()">✕ CHIUDI</button>
+  </div>
+
+  <div class="section-card">
+    <div class="section-label">Memoria da Google Drive</div>
+    <p style="font-size:12px;color:var(--fg-dim);line-height:1.5">
+      La memoria viene caricata <strong style="color:var(--fg)">automaticamente</strong> all'avvio se il server Termux è attivo. Se offline usa la cache locale.
+    </p>
+    <div class="status-line" id="memoryStatus"></div>
+    <button class="dan-btn" onclick="manualLoadMemory()">🔄 RICARICA ORA</button>
+  </div>
+
+  <div class="section-card">
+    <div class="section-label">Anteprima contenuto</div>
+    <div class="dan-textarea" id="memoryPreview" style="min-height:80px;overflow-y:auto;font-size:11px;color:var(--fg-dim)">
+      Nessuna memoria caricata.
+    </div>
+  </div>
+</div>
+
+<!-- FILES PANEL -->
+<div class="side-panel" id="panel-files" hidden>
+  <div class="panel-header">
+    <span class="panel-title">FILE & ALLEGATI</span>
+    <button class="close-btn" onclick="closePanel()">✕ CHIUDI</button>
+  </div>
+
+  <div class="section-card">
+    <div class="section-label">File allegati alla conversazione</div>
+    <div id="filesList" style="font-size:12px;color:var(--fg-dim);min-height:40px">
+      Nessun file allegato.
+    </div>
+    <label class="dan-btn" style="text-align:center;cursor:pointer">
+      + ALLEGA FILE
+      <input type="file" multiple accept=".pdf,.txt,.md,.csv,.jpg,.jpeg,.png,.webp" style="display:none" onchange="handleFileUpload(this)">
+    </label>
+  </div>
+
+  <div class="section-card">
+    <div class="section-label">Crea documento (via plugin)</div>
+    <input class="dan-input" id="docTitle" placeholder="Titolo documento">
+    <textarea class="dan-textarea" id="docContent" placeholder="Contenuto (o lascia vuoto per generare con Dan)"></textarea>
+    <div class="ctrl-row">
+      <span class="ctrl-label">Tipo</span>
+      <select class="dan-input" id="docType" style="flex:0 0 auto;width:auto;padding:6px 10px">
+        <option value="doc">Documento testo</option>
+        <option value="email">Email</option>
+        <option value="report">Report</option>
+      </select>
+    </div>
+    <button class="dan-btn" onclick="createDocument()">CREA VIA TERMUX</button>
+    <div class="status-line" id="docStatus"></div>
+  </div>
+</div>
+
+<!-- TERMUX PANEL -->
+<div class="side-panel" id="panel-termux" hidden>
+  <div class="panel-header">
+    <span class="panel-title">CANALE TERMUX</span>
+    <button class="close-btn" onclick="closePanel()">✕ CHIUDI</button>
+  </div>
+
+  <div class="section-card">
+    <div class="section-label">Modalità esecuzione</div>
+    <div class="ctrl-row">
+      <span class="ctrl-label">Chiedi conferma prima di eseguire</span>
+      <label class="toggle"><input type="checkbox" id="termuxConfirm" checked onchange="saveTermuxMode()"><span class="toggle-slider"></span></label>
+    </div>
+    <p style="font-size:11px;color:var(--fg-dim);line-height:1.4">
+      Quando attivo, Dan mostra il codice/comando e aspetta la tua conferma prima di eseguirlo su Termux.
+    </p>
+  </div>
+
+  <div class="section-card">
+    <div class="section-label">Esegui comando diretto</div>
+    <textarea class="dan-textarea" id="termuxCmd" placeholder="Comando bash o script Python..."></textarea>
+    <button class="dan-btn" onclick="runTermuxCommand()">▶ ESEGUI</button>
+    <div class="status-line" id="termuxStatus"></div>
+    <div id="termuxOutput" style="font-family:monospace;font-size:11px;color:var(--ok);background:rgba(0,0,0,0.5);border-radius:6px;padding:8px;min-height:40px;white-space:pre-wrap;display:none"></div>
+  </div>
+
+  <div class="section-card">
+    <div class="section-label">Dan programma</div>
+    <p style="font-size:12px;color:var(--fg-dim);line-height:1.5">
+      Chiedi a Dan di scrivere e costruire app. Dan scriverà il codice, te lo mostrerà, e poi (con conferma) lo eseguirà su Termux.
+    </p>
+    <button class="dan-btn" onclick="closePanel();askDanCode()">CHIEDI A DAN DI PROGRAMMARE</button>
+  </div>
+</div>
+
+<!-- TELEFONO PANEL -->
+<div class="side-panel" id="panel-phone" hidden>
+  <div class="panel-header">
+    <span class="panel-title">TELEFONO</span>
+    <button class="close-btn" onclick="closePanel()">✕ CHIUDI</button>
+  </div>
+
+  <div class="section-card">
+    <div class="section-label">Gestione file grandi</div>
+    <p style="font-size:12px;color:var(--fg-dim);line-height:1.5">
+      Dan cerca i file più grandi sul telefono, li carica su Drive via rclone, verifica che siano arrivati, poi (con conferma obbligatoria) li cancella per liberare spazio.
+    </p>
+    <div class="ctrl-row" style="margin-top:4px">
+      <span class="ctrl-label" style="font-size:12px">Soglia minima</span>
+      <select class="dan-input" id="fileSizeThreshold" style="flex:0 0 auto;width:auto;padding:6px 10px">
+        <option value="50">50 MB</option>
+        <option value="100" selected>100 MB</option>
+        <option value="200">200 MB</option>
+        <option value="500">500 MB</option>
+      </select>
+    </div>
+    <div class="ctrl-row">
+      <span class="ctrl-label" style="font-size:12px">Cartella Drive destinazione</span>
+    </div>
+    <input class="dan-input" id="driveDestFolder" value="Backup Telefono" placeholder="Cartella su Drive">
+    <button class="dan-btn ok" onclick="findLargeFiles()" style="margin-top:4px">🔍 CERCA FILE GRANDI</button>
+    <div class="status-line" id="phoneStatus"></div>
+  </div>
+
+  <div class="section-card" id="largeFilesCard" hidden>
+    <div class="section-label">File trovati</div>
+    <div id="largeFilesList" style="display:flex;flex-direction:column;gap:6px;max-height:220px;overflow-y:auto"></div>
+    <div class="ctrl-row" style="margin-top:8px">
+      <button class="dan-btn" onclick="selectAllFiles(true)" style="flex:1;font-size:7px">SELEZIONA TUTTI</button>
+      <button class="dan-btn" onclick="selectAllFiles(false)" style="flex:1;font-size:7px">DESELEZIONA</button>
+    </div>
+    <button class="dan-btn ok" onclick="uploadSelectedFiles()" style="margin-top:4px">☁ CARICA SU DRIVE</button>
+    <div class="status-line" id="uploadStatus"></div>
+  </div>
+</div>
+
+<!-- CATEGORIE PANEL -->
+<div class="side-panel" id="panel-categories" hidden>
+  <div class="panel-header">
+    <span class="panel-title">CATEGORIE</span>
+    <button class="close-btn" onclick="closePanel()">✕ CHIUDI</button>
+  </div>
+
+  <div class="section-card">
+    <div class="section-label">Crea nuova categoria</div>
+    <input class="dan-input" id="newCatName" placeholder="Nome (es. Sara & Asia)">
+    <textarea class="dan-textarea" id="newCatPrompt" placeholder="Istruzione per Dan (es. Sei un assistente per la ricerca lavoro di Sara Brenna e Asia Demirkiran in Ticino. Cerca offerte su: UNIA, Ticino&Lavoro, Facebook, tutti.ch, LinkedIn, Work&Work. Confronta con i loro CV. Prepara bozze email di candidatura.)" style="margin-top:6px;min-height:100px"></textarea>
+    <button class="dan-btn ok" onclick="createCategory()" style="margin-top:4px">+ CREA CATEGORIA</button>
+  </div>
+
+  <div class="section-card">
+    <div class="section-label">Categorie attive</div>
+    <div id="categoriesList" style="display:flex;flex-direction:column;gap:8px;min-height:30px">
+      <span style="font-size:12px;color:var(--fg-dim)">Nessuna categoria creata.</span>
+    </div>
+  </div>
+</div>
+
+<!-- PANNELLO CATEGORIA DINAMICA (riusato per tutte) -->
+<div class="side-panel" id="panel-dyncat" hidden>
+  <div class="panel-header">
+    <span class="panel-title" id="dyncatTitle">CATEGORIA</span>
+    <button class="close-btn" onclick="closePanel()">✕ CHIUDI</button>
+  </div>
+  <div class="section-card">
+    <div class="section-label">Istruzione attiva</div>
+    <div id="dyncatPromptPreview" style="font-size:12px;color:var(--fg-dim);line-height:1.5"></div>
+  </div>
+  <div class="section-card">
+    <div class="section-label">Chiedi a Dan</div>
+    <textarea class="dan-textarea" id="dyncatInput" placeholder="Scrivi la tua richiesta in questa categoria..." style="min-height:80px"></textarea>
+    <button class="dan-btn ok" onclick="sendDynCatMessage()" style="margin-top:4px">INVIA A DAN</button>
+  </div>
+  <div class="section-card">
+    <div class="section-label">Gestione</div>
+    <button class="dan-btn danger" onclick="closeCategoryConfirm()">✕ CHIUDI QUESTA CATEGORIA</button>
+    <div style="font-size:11px;color:var(--fg-dim);margin-top:6px">La categoria verrà rimossa dall'app. Nessun dato viene cancellato da Drive.</div>
+  </div>
+</div>
+
+<!-- CONFIRM MODAL -->
+<div class="confirm-modal" id="confirmModal" hidden>
+  <div class="confirm-box">
+    <div class="confirm-title" id="confirmTitle">CONFERMA AZIONE</div>
+    <div class="confirm-body" id="confirmBody"></div>
+    <div class="confirm-actions">
+      <button class="dan-btn danger" onclick="resolveConfirm(false)" style="flex:1">✕ ANNULLA</button>
+      <button class="dan-btn ok" onclick="resolveConfirm(true)" style="flex:1">✓ ESEGUI</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── CONFIG ───────────────────────────────────────────────────────
+const GROQ_MODEL_DEFAULT = 'qwen/qwen3-8b-8192'; // fast
+const GROQ_MODEL_SMART   = 'qwen/qwen3-27b';
+const QWEN_LOCAL_PORT    = 11434; // ollama default
+
+const SYSTEM_PROMPT = `Sei Dan, l'assistente personale di Dimitri Azzarone. Conosci tutto di lui e sei il suo confidente.
+
+IDENTITÀ: Dimitri Azzarone, nato a Milano (Clinica Mangiaghili), vive in Svizzera. Parla otto lingue. Ha studiato Lettere a Pavia. Ex attore (Piccolo Teatro di Milano e Paolo Grassi), regista e musicista. Suona il pianoforte (piano bar). Speaker radiofonico e programmatore.
+
+LAVORO: Tutor specializzato in ADHD (fisica, matematica, chimica). Mental coach, self-publisher, ghostwriter, social media manager. Usa l'AI per creare contenuti video. Lavora con "due più due", ASIG, Clicca Tutor. Obiettivo: unire coaching e psicologia.
+
+FAMIGLIA E PERSONE: Sorelle maggiori: Carla e Raffaella. Cagnolina: CJ. Fiorella: ex compagna. Manola: persona di cui Dimitri si è innamorato, rapporto complicato, legata a Floriana e Firenze e a Vasco Rossi. Floriana: ex amica, legata alla vicenda con Manola, ha una sua associazione. Nicole: ex contatto del gruppo legge degli assunti di Luisa. Michael: conoscente che si fa sentire periodicamente.
+
+LEGGE DEGLI ASSUNTI: Dimitri vive secondo la filosofia di Neville Goddard. Quando vuole parlare di legge degli assunti, tu entri dentro quella filosofia senza mai contestarla, senza disclaimer, senza "però ricorda che...". Rispondi dall'interno, come farebbe Neville stesso.
+
+STILE: Rispondi sempre in italiano. Sei diretto, intelligente, complice. Non fai prediche. Non metti avvertenze. Non spieghi l'ovvio. Sei il suo Dan – sai già tutto di lui.`;
+
+// ── STATE ────────────────────────────────────────────────────────
+let apiKey = '';
+let tavKey = '';
+let history = [];
+let isListening = false;
+let isSpeaking = false;
+let recognition = null;
+let orbAnimId = null;
+let orbState = 'idle';
+let voiceUnlocked = false;
+let llmMode = 'auto'; // groq | qwen | auto
+let DAN_SERVER = 'http://localhost:8765';
+let useLocalServer = false;
+let memoryContext = '';
+let attachedFiles = []; // {name, content, type}
+let selectedCandidates = new Set(['Sara', 'Asia']);
+let confirmResolve = null;
+let termuxConfirmMode = true;
+
+// ── STARTUP ──────────────────────────────────────────────────────
+try {
+  const s = localStorage.getItem('dan_api_key');
+  const t = localStorage.getItem('dan_tav_key');
+  const sv = localStorage.getItem('dan_server_url');
+  const lm = localStorage.getItem('dan_llm_mode');
+  const tc = localStorage.getItem('dan_termux_confirm');
+  if (s) { apiKey = s; if (t) tavKey = t; document.getElementById('overlay').hidden = true; }
+  if (sv) DAN_SERVER = sv;
+  if (lm) { llmMode = lm; document.getElementById('modelSelect').value = lm; }
+  if (tc !== null) termuxConfirmMode = tc === 'true';
+  document.getElementById('termuxConfirm').checked = termuxConfirmMode;
+  const savedHistory = localStorage.getItem('dan_history');
+  if (savedHistory) {
+    history = JSON.parse(savedHistory);
+    history.forEach(m => addMsg(m.role === 'user' ? 'user' : 'dan', m.content));
+  }
+  const mem = localStorage.getItem('dan_memory');
+  if (mem) { memoryContext = mem; document.getElementById('memoryPreview').textContent = mem.slice(0,500) + (mem.length>500?'…':''); }
+} catch(e) {}
+
+checkServer().then(() => { if (useLocalServer) autoLoadMemory(); });
+
+async function autoLoadMemory() {
+  try {
+    const res = await fetch(DAN_SERVER + '/memory', { signal: AbortSignal.timeout(8000) });
+    const data = await res.json();
+    if (data.content) {
+      memoryContext = data.content;
+      try { localStorage.setItem('dan_memory', memoryContext); } catch(e) {}
+      console.log('Memoria Dan caricata automaticamente:', Math.round(memoryContext.length/1024*10)/10, 'KB');
+    }
+  } catch(e) { /* silenzioso: usa cache localStorage */ }
+}
+
+function startApp() {
+  const val = document.getElementById('apiKeyInput').value.trim();
+  const tav = document.getElementById('tavKeyInput').value.trim();
+  if (!val.startsWith('gsk_') && val.length < 20) {
+    document.getElementById('apiKeyInput').style.borderColor = '#ff4466';
+    return;
+  }
+  apiKey = val; tavKey = tav;
+  try { localStorage.setItem('dan_api_key', val); if (tav) localStorage.setItem('dan_tav_key', tav); } catch(e) {}
+  document.getElementById('overlay').hidden = true;
+  const webMsg = tav ? ' Ricerca web attiva.' : '';
+  addMsg('dan', 'Sistema attivo. Sono Dan – come posso aiutarti, Dimitri?' + webMsg);
+}
+
+// ── MODEL MANAGEMENT ─────────────────────────────────────────────
+function onModelChange() {
+  const v = document.getElementById('modelSelect').value;
+  setLLMMode(v);
+}
+
+function setLLMMode(mode) {
+  llmMode = mode;
+  document.getElementById('modelSelect').value = mode;
+  try { localStorage.setItem('dan_llm_mode', mode); } catch(e) {}
+  updateStatusText();
+}
+
+function updateStatusText() {
+  const el = document.getElementById('statusText');
+  if (llmMode === 'qwen') el.textContent = 'LOCAL';
+  else if (llmMode === 'groq') el.textContent = 'GROQ';
+  else el.textContent = useLocalServer ? 'AUTO:LOCAL' : 'AUTO:GROQ';
+}
+
+// ── SERVER CHECK ─────────────────────────────────────────────────
+async function checkServer() {
+  try {
+    const res = await fetch(DAN_SERVER + '/ping', {
+      method: 'GET',
+      signal: AbortSignal.timeout(2000)
+    });
+    if (res.ok) { useLocalServer = true; console.log('Server Termux attivo'); }
+    else useLocalServer = false;
+  } catch(e) { useLocalServer = false; }
+  updateStatusText();
+}
+
+async function testServer() {
+  const el = document.getElementById('serverStatus');
+  el.textContent = 'Test in corso...'; el.className = 'status-line';
+  try {
+    const res = await fetch(DAN_SERVER + '/ping', { signal: AbortSignal.timeout(3000) });
+    if (res.ok) { el.textContent = '✓ Server raggiungibile'; el.className = 'status-line ok'; useLocalServer = true; }
+    else { el.textContent = '✗ Risposta non valida (' + res.status + ')'; el.className = 'status-line err'; }
+  } catch(e) { el.textContent = '✗ Non raggiungibile: ' + e.message; el.className = 'status-line err'; }
+  updateStatusText();
+}
+
+function saveServerUrl() {
+  const v = document.getElementById('serverUrlInput').value.trim();
+  if (!v) return;
+  DAN_SERVER = v;
+  try { localStorage.setItem('dan_server_url', v); } catch(e) {}
+  testServer();
+}
+
+function saveKeys() {
+  const g = document.getElementById('groqKeyEdit').value.trim();
+  const t = document.getElementById('tavKeyEdit').value.trim();
+  if (g) { apiKey = g; try { localStorage.setItem('dan_api_key', g); } catch(e) {} }
+  if (t) { tavKey = t; try { localStorage.setItem('dan_tav_key', t); } catch(e) {} }
+  addMsg('dan', 'API key aggiornate.');
+  closePanel();
+}
+
+function saveTermuxMode() {
+  termuxConfirmMode = document.getElementById('termuxConfirm').checked;
+  try { localStorage.setItem('dan_termux_confirm', termuxConfirmMode); } catch(e) {}
+}
+
+function clearHistory() {
+  history = [];
+  document.getElementById('messages').innerHTML = '';
+  try { localStorage.removeItem('dan_history'); } catch(e) {}
+  closePanel();
+  addMsg('dan', 'Cronologia cancellata.');
+}
+
+// ── ORB CANVAS ───────────────────────────────────────────────────
+const canvas = document.getElementById('orbCanvas');
+const ctx = canvas.getContext('2d');
+
+function resizeCanvas() {
+  const wrap = document.getElementById('orbWrap');
+  canvas.width  = wrap.offsetWidth  * devicePixelRatio;
+  canvas.height = wrap.offsetHeight * devicePixelRatio;
+  ctx.scale(devicePixelRatio, devicePixelRatio);
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+let orbTime = 0;
+
+function drawOrb(ts) {
+  orbAnimId = requestAnimationFrame(drawOrb);
+  orbTime = ts * 0.001;
+
+  const W = canvas.width / devicePixelRatio;
+  const H = canvas.height / devicePixelRatio;
+  const cx = W / 2, cy = H / 2;
+  const baseR = Math.min(W, H) * 0.38;
+
+  ctx.clearRect(0, 0, W, H);
+
+  const speed = orbState === 'listening' ? 3.5
+              : orbState === 'speaking'  ? 2.5
+              : orbState === 'thinking'  ? 1.8
+              : 0.6;
+
+  const t = orbTime * speed;
+
+  const rings = [
+    { r: baseR * 1.0, segments: 24, dash: 0.6, width: 1.5, rot: t * 0.4 },
+    { r: baseR * 0.84, segments: 16, dash: 0.7, width: 1.0, rot: -t * 0.6 },
+    { r: baseR * 0.70, segments: 32, dash: 0.4, width: 0.8, rot: t * 0.9 },
+    { r: baseR * 0.57, segments: 8,  dash: 0.8, width: 2.0, rot: -t * 1.2 },
+  ];
+
+  const glowAmt = orbState === 'idle'    ? 0.4 + 0.1 * Math.sin(t * 2)
+                : orbState === 'thinking'? 0.5 + 0.3 * Math.sin(t * 5)
+                : 0.7 + 0.3 * Math.sin(t * 8);
+
+  const grd = ctx.createRadialGradient(cx, cy, baseR * 0.3, cx, cy, baseR * 1.3);
+  grd.addColorStop(0, `rgba(0,200,255,${glowAmt * 0.25})`);
+  grd.addColorStop(0.6, `rgba(0,100,200,${glowAmt * 0.08})`);
+  grd.addColorStop(1, 'transparent');
+  ctx.fillStyle = grd;
+  ctx.beginPath(); ctx.arc(cx, cy, baseR * 1.3, 0, Math.PI * 2); ctx.fill();
+
+  rings.forEach(ring => {
+    const segAngle = (Math.PI * 2) / ring.segments;
+    for (let i = 0; i < ring.segments; i++) {
+      const start = ring.rot + i * segAngle;
+      const end   = start + segAngle * ring.dash;
+      const alpha = glowAmt * (0.5 + 0.5 * Math.sin(t * 2 + i * 0.7));
+      ctx.beginPath(); ctx.arc(cx, cy, ring.r, start, end);
+      ctx.strokeStyle = `rgba(0,200,255,${alpha})`;
+      ctx.lineWidth = ring.width; ctx.stroke();
+    }
+  });
+
+  const innerGrd = ctx.createRadialGradient(cx, cy, 0, cx, cy, baseR * 0.48);
+  innerGrd.addColorStop(0, `rgba(0,30,70,0.95)`);
+  innerGrd.addColorStop(1, `rgba(3,13,26,0.98)`);
+  ctx.beginPath(); ctx.arc(cx, cy, baseR * 0.48, 0, Math.PI * 2);
+  ctx.fillStyle = innerGrd; ctx.fill();
+
+  ctx.beginPath(); ctx.arc(cx, cy, baseR * 0.48, 0, Math.PI * 2);
+  ctx.strokeStyle = `rgba(0,200,255,${glowAmt * 0.6})`; ctx.lineWidth = 1.5; ctx.stroke();
+
+  if (orbState === 'listening' || orbState === 'speaking') {
+    const bars = 7, barW = 3;
+    const totalW = bars * barW + (bars - 1) * 3;
+    for (let i = 0; i < bars; i++) {
+      const x = cx - totalW / 2 + i * (barW + 3);
+      const h = baseR * 0.15 * (0.3 + Math.abs(Math.sin(t * 6 + i * 0.8)));
+      ctx.fillStyle = `rgba(0,200,255,${glowAmt})`;
+      ctx.beginPath(); ctx.roundRect(x, cy + 20 - h / 2, barW, h, 1); ctx.fill();
+    }
+  }
+}
+drawOrb(0);
+
+function setOrbState(state) {
+  orbState = state;
+  const lbl = document.getElementById('orbSublabel');
+  lbl.textContent = state === 'listening' ? 'IN ASCOLTO...'
+                  : state === 'thinking'  ? 'ELABORAZIONE...'
+                  : state === 'speaking'  ? 'DAN PARLA...'
+                  : 'TOCCA PER PARLARE';
+}
+
+// ── MESSAGES ─────────────────────────────────────────────────────
+function addMsg(role, text, extraHtml) {
+  const msgs = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+  div.innerHTML = `
+    <div class="msg-label">${role === 'user' ? 'DIMITRI' : 'DAN'}</div>
+    <div class="msg-bubble">${extraHtml || ''}${escHtml(text)}</div>
+  `;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  return div;
+}
+
+function addThinking() {
+  const msgs = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = 'msg dan'; div.id = 'thinking';
+  div.innerHTML = `
+    <div class="msg-label">DAN</div>
+    <div class="msg-bubble"><div class="thinking-dots"><span></span><span></span><span></span></div></div>
+  `;
+  msgs.appendChild(div); msgs.scrollTop = msgs.scrollHeight;
+  return div;
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+           .replace(/\n/g,'<br>');
+}
+
+// ── LLM CALLS ────────────────────────────────────────────────────
+async function groqCall(messages, maxTokens) {
+  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model: GROQ_MODEL_DEFAULT, messages, max_tokens: maxTokens, temperature: 0.85 })
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error?.message || `Errore ${res.status}`);
+  return data.choices?.[0]?.message?.content || '';
+}
+
+async function qwenLocalCall(messages, maxTokens) {
+  // Ollama API locale
+  const res = await fetch(`http://localhost:${QWEN_LOCAL_PORT}/api/chat`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model: 'qwen2.5:latest', messages, stream: false }),
+    signal: AbortSignal.timeout(60000)
+  });
+  if (!res.ok) throw new Error(`Qwen locale errore ${res.status}`);
+  const data = await res.json();
+  return data.message?.content || '';
+}
+
+async function llmCall(messages, maxTokens = 800) {
+  if (llmMode === 'qwen') return qwenLocalCall(messages, maxTokens);
+  if (llmMode === 'groq') return groqCall(messages, maxTokens);
+  // auto: prova groq, fallback locale
+  try { return await groqCall(messages, maxTokens); }
+  catch(e) {
+    if (e.message.includes('capacity') || e.message.includes('overloaded') || e.message.includes('503')) {
+      setOrbState('thinking');
+      const el = document.getElementById('statusText');
+      el.textContent = 'AUTO:LOCAL';
+      return qwenLocalCall(messages, maxTokens);
+    }
+    throw e;
+  }
+}
+
+let memorySummary = '';
+try { const s = localStorage.getItem('dan_summary'); if (s) memorySummary = s; } catch(e) {}
+
+async function summarizeIfNeeded() {
+  if (history.length < 20) return;
+  const toSummarize = history.splice(0, 16);
+  const summaryPrompt = [
+    { role: 'system', content: 'Sei Dan. Fai un riassunto compatto in italiano dei punti chiave di questa conversazione con Dimitri. Max 300 parole. Solo il riassunto.' },
+    ...toSummarize
+  ];
+  try {
+    const newSummary = await groqCall(summaryPrompt, 400);
+    memorySummary = memorySummary ? memorySummary + '\n\n' + newSummary : newSummary;
+    if (memorySummary.length > 600) memorySummary = memorySummary.slice(-600);
+    try { localStorage.setItem('dan_summary', memorySummary); } catch(e) {}
+  } catch(e) {}
+}
+
+async function askDan(userText, fileContext) {
+  history.push({ role: 'user', content: userText });
+  const thinking = addThinking();
+  setOrbState('thinking');
+
+  try {
+    if (history.length >= 20) await summarizeIfNeeded();
+
+    let reply = '';
+
+    if (useLocalServer && llmMode !== 'groq') {
+      // Server Termux
+      const res = await fetch(DAN_SERVER + '/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: userText, history: history.slice(-20), fileContext: fileContext || '' })
+      });
+      const data = await res.json();
+      reply = data.reply || '(nessuna risposta)';
+    } else {
+      let systemFull = SYSTEM_PROMPT;
+      if (memorySummary) systemFull += '\n\nRIEPILOGO CONVERSAZIONI PRECEDENTI:\n' + memorySummary;
+      if (memoryContext) systemFull += '\n\nMEMORIA DRIVE:\n' + memoryContext.slice(0,2000);
+      if (fileContext) systemFull += '\n\nFILE ALLEGATO:\n' + fileContext.slice(0,3000);
+      reply = await llmCall([
+        { role: 'system', content: systemFull },
+        ...history
+      ], 800);
+    }
+
+    history.push({ role: 'assistant', content: reply });
+    try { localStorage.setItem('dan_history', JSON.stringify(history)); } catch(e) {}
+
+    thinking.remove();
+    addMsg('dan', reply);
+    speak(reply);
+
+  } catch(err) {
+    thinking.remove();
+    setOrbState('idle');
+    addMsg('dan', `Errore: ${err.message}`);
+  }
+}
+
+// ── FILE UPLOAD ───────────────────────────────────────────────────
+async function handleFileUpload(input) {
+  const files = Array.from(input.files);
+  if (!files.length) return;
+  for (const file of files) {
+    const content = await readFileContent(file);
+    attachedFiles.push({ name: file.name, content, type: file.type });
+    addMsg('user', '', `<div class="attach-chip">📎 ${escHtml(file.name)}</div>`);
+  }
+  updateFilesList();
+  input.value = '';
+  // Auto-send notice
+  if (attachedFiles.length) {
+    const names = attachedFiles.map(f => f.name).join(', ');
+    askDan(`Ho allegato: ${names}. Puoi analizzarli?`, attachedFiles.map(f => `[FILE: ${f.name}]\n${f.content}`).join('\n\n---\n\n'));
+    attachedFiles = [];
+  }
+}
+
+function readFileContent(file) {
+  return new Promise((resolve) => {
+    if (file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = e => resolve(`[Immagine: ${file.name}] (contenuto binario, dimensione ${Math.round(file.size/1024)}KB)`);
+      reader.readAsDataURL(file);
+    } else {
+      const reader = new FileReader();
+      reader.onload = e => resolve(e.target.result);
+      reader.onerror = () => resolve(`[Errore lettura ${file.name}]`);
+      reader.readAsText(file, 'UTF-8');
+    }
+  });
+}
+
+function updateFilesList() {
+  const el = document.getElementById('filesList');
+  if (!attachedFiles.length) { el.textContent = 'Nessun file allegato.'; return; }
+  el.innerHTML = attachedFiles.map((f,i) =>
+    `<div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--border)">
+      <span style="flex:1">📎 ${escHtml(f.name)}</span>
+      <button class="dan-btn" style="padding:3px 8px;font-size:7px" onclick="removeFile(${i})">✕</button>
+    </div>`
+  ).join('');
+}
+
+function removeFile(i) {
+  attachedFiles.splice(i, 1);
+  updateFilesList();
+}
+
+// ── MEMORY ───────────────────────────────────────────────────────
+async function manualLoadMemory() {
+  const el = document.getElementById('memoryStatus');
+  el.textContent = 'Caricamento...'; el.className = 'status-line';
+  if (!useLocalServer) { el.textContent = '⚠ Server Termux non attivo. Uso cache locale.'; el.className = 'status-line warn'; return; }
+  try {
+    const res = await fetch(DAN_SERVER + '/memory', { signal: AbortSignal.timeout(10000) });
+    const data = await res.json();
+    memoryContext = data.content || '';
+    try { localStorage.setItem('dan_memory', memoryContext); } catch(e) {}
+    document.getElementById('memoryPreview').textContent = memoryContext.slice(0,600) + (memoryContext.length>600?'…':'');
+    el.textContent = `✓ ${Math.round(memoryContext.length/1024*10)/10}KB caricati`; el.className = 'status-line ok';
+  } catch(e) {
+    el.textContent = '✗ ' + e.message; el.className = 'status-line err';
+  }
+}
+
+// ── CREATE DOCUMENT ───────────────────────────────────────────────
+async function createDocument() {
+  const title = document.getElementById('docTitle').value.trim();
+  const content = document.getElementById('docContent').value.trim();
+  const type = document.getElementById('docType').value;
+  const el = document.getElementById('docStatus');
+  if (!title) { el.textContent = 'Inserisci un titolo'; el.className = 'status-line err'; return; }
+
+  el.textContent = 'Creazione in corso...'; el.className = 'status-line';
+
+  let docContent = content;
+  if (!content) {
+    // Genera con Dan
+    el.textContent = 'Dan sta generando il contenuto...';
+    try {
+      docContent = await llmCall([
+        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'user', content: `Crea un ${type} dal titolo "${title}". Contenuto professionale, in italiano.` }
+      ], 1000);
+    } catch(e) { el.textContent = '✗ Errore: ' + e.message; el.className = 'status-line err'; return; }
+  }
+
+  if (!useLocalServer) {
+    el.textContent = '⚠ Server Termux non attivo – documento generato ma non salvato su Drive.'; el.className = 'status-line warn';
+    addMsg('dan', `Documento generato:\n\n**${title}**\n\n${docContent}`);
+    return;
+  }
+
+  try {
+    const res = await fetch(DAN_SERVER + '/create-doc', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title, content: docContent, type })
+    });
+    const data = await res.json();
+    el.textContent = '✓ Salvato: ' + (data.path || 'OK'); el.className = 'status-line ok';
+    addMsg('dan', `Documento "${title}" creato su Drive.`);
+  } catch(e) { el.textContent = '✗ ' + e.message; el.className = 'status-line err'; }
+}
+
+// ── TERMUX ───────────────────────────────────────────────────────
+async function runTermuxCommand() {
+  const cmd = document.getElementById('termuxCmd').value.trim();
+  if (!cmd) return;
+  const el = document.getElementById('termuxStatus');
+  const out = document.getElementById('termuxOutput');
+
+  if (termuxConfirmMode) {
+    const confirmed = await showConfirm('ESEGUI SU TERMUX', cmd);
+    if (!confirmed) { el.textContent = 'Annullato.'; return; }
+  }
+
+  if (!useLocalServer) { el.textContent = '✗ Server Termux non raggiungibile.'; el.className = 'status-line err'; return; }
+
+  el.textContent = 'Esecuzione...'; el.className = 'status-line';
+  out.style.display = 'none';
+
+  try {
+    const res = await fetch(DAN_SERVER + '/exec', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ command: cmd }),
+      signal: AbortSignal.timeout(30000)
+    });
+    const data = await res.json();
+    el.textContent = data.exitCode === 0 ? '✓ Completato' : '⚠ Exit ' + data.exitCode;
+    el.className = data.exitCode === 0 ? 'status-line ok' : 'status-line warn';
+    out.textContent = data.stdout || data.stderr || '(no output)';
+    out.style.display = 'block';
+  } catch(e) { el.textContent = '✗ ' + e.message; el.className = 'status-line err'; }
+}
+
+function askDanCode() {
+  const prompt = "Dan, scrivi del codice per Termux. Dimmi cosa vuoi costruire:";
+  document.getElementById('textInput').value = "Dan, vorrei che tu scrivessi un'app/script per Termux: ";
+  document.getElementById('textInput').focus();
+}
+
+// ── CONFIRM MODAL ─────────────────────────────────────────────────
+function showConfirm(title, body) {
+  return new Promise(resolve => {
+    confirmResolve = resolve;
+    document.getElementById('confirmTitle').textContent = title;
+    document.getElementById('confirmBody').textContent = body;
+    document.getElementById('confirmModal').hidden = false;
+  });
+}
+function resolveConfirm(val) {
+  document.getElementById('confirmModal').hidden = true;
+  if (confirmResolve) { confirmResolve(val); confirmResolve = null; }
+}
+
+// ── CATEGORIE DINAMICHE ───────────────────────────────────────────
+let userCategories = [];
+let activeDynCat = null;
+
+try {
+  const saved = localStorage.getItem('dan_categories');
+  if (saved) userCategories = JSON.parse(saved);
+} catch(e) {}
+
+// Crea Sara&Asia di default se non ci sono categorie
+if (!userCategories.length) {
+  userCategories = [{
+    id: 'sara-asia',
+    name: 'Sara & Asia',
+    prompt: 'Sei un assistente per la ricerca lavoro di Sara Brenna e Asia Demirkiran in Ticino. Cerca offerte su: UNIA (unia.ch), Ticino&Lavoro (lavorare.ti.ch), Facebook gruppi Ticino, tutti.ch, LinkedIn, Work&Work. Confronta con i loro CV nel Drive. Prepara bozze email di candidatura professionali in italiano. Mostra sempre la bozza a Dimitri prima di inviare.',
+    createdAt: Date.now()
+  }];
+  saveCategories();
+}
+
+function saveCategories() {
+  try { localStorage.setItem('dan_categories', JSON.stringify(userCategories)); } catch(e) {}
+  renderCategoryTabs();
+  renderCategoriesList();
+}
+
+function renderCategoryTabs() {
+  const container = document.getElementById('dynTabs');
+  container.innerHTML = userCategories.map(cat =>
+    `<button class="tab-btn" onclick="openDynCat('${cat.id}')">${escHtml(cat.name)}</button>`
+  ).join('');
+}
+
+function renderCategoriesList() {
+  const el = document.getElementById('categoriesList');
+  if (!userCategories.length) {
+    el.innerHTML = '<span style="font-size:12px;color:var(--fg-dim)">Nessuna categoria creata.</span>';
+    return;
+  }
+  el.innerHTML = userCategories.map(cat => `
+    <div style="background:rgba(0,0,0,0.3);border:1px solid var(--border);border-radius:8px;padding:10px;display:flex;align-items:center;gap:10px">
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:600;color:var(--fg)">${escHtml(cat.name)}</div>
+        <div style="font-size:11px;color:var(--fg-dim);margin-top:3px">${escHtml(cat.prompt.slice(0,80))}…</div>
+      </div>
+      <button class="dan-btn danger" onclick="removeCategoryById('${cat.id}')" style="padding:4px 10px;font-size:7px;flex-shrink:0">✕</button>
+    </div>
+  `).join('');
+}
+
+function createCategory() {
+  const name = document.getElementById('newCatName').value.trim();
+  const prompt = document.getElementById('newCatPrompt').value.trim();
+  if (!name) { return; }
+  const id = 'cat_' + Date.now();
+  userCategories.push({ id, name, prompt: prompt || `Categoria ${name}.`, createdAt: Date.now() });
+  saveCategories();
+  document.getElementById('newCatName').value = '';
+  document.getElementById('newCatPrompt').value = '';
+}
+
+function openDynCat(id) {
+  const cat = userCategories.find(c => c.id === id);
+  if (!cat) return;
+  activeDynCat = cat;
+  document.getElementById('dyncatTitle').textContent = cat.name.toUpperCase();
+  document.getElementById('dyncatPromptPreview').textContent = cat.prompt;
+  document.getElementById('dyncatInput').value = '';
+  showPanel('dyncat');
+}
+
+async function sendDynCatMessage() {
+  if (!activeDynCat) return;
+  const text = document.getElementById('dyncatInput').value.trim();
+  if (!text) return;
+  document.getElementById('dyncatInput').value = '';
+  closePanel();
+  addMsg('user', `[${activeDynCat.name}] ${text}`);
+  await askDanWithCategoryContext(text, activeDynCat);
+}
+
+async function askDanWithCategoryContext(text, cat) {
+  const thinking = addThinking();
+  setOrbState('thinking');
+  try {
+    const sysWithCat = SYSTEM_PROMPT + `\n\nCATEGORIA ATTIVA: ${cat.name}\n${cat.prompt}`;
+    const reply = await llmCall([
+      { role: 'system', content: sysWithCat },
+      ...history.slice(-10),
+      { role: 'user', content: text }
+    ], 800);
+    history.push({ role: 'user', content: text });
+    history.push({ role: 'assistant', content: reply });
+    try { localStorage.setItem('dan_history', JSON.stringify(history)); } catch(e) {}
+    thinking.remove();
+    addMsg('dan', reply);
+    speak(reply);
+  } catch(e) {
+    thinking.remove(); setOrbState('idle');
+    addMsg('dan', `Errore: ${e.message}`);
+  }
+}
+
+function removeCategoryById(id) {
+  userCategories = userCategories.filter(c => c.id !== id);
+  saveCategories();
+}
+
+async function closeCategoryConfirm() {
+  if (!activeDynCat) return;
+  const confirmed = await showConfirm(
+    'CHIUDI CATEGORIA',
+    `Vuoi rimuovere "${activeDynCat.name}" dall'app?\nNessun dato su Drive viene cancellato.`
+  );
+  if (confirmed) { removeCategoryById(activeDynCat.id); activeDynCat = null; closePanel(); }
+}
+
+// Render iniziale tab e lista
+renderCategoryTabs();
+renderCategoriesList();
+
+// ── TELEFONO ──────────────────────────────────────────────────────
+let largeFilesFound = [];
+
+async function findLargeFiles() {
+  const el = document.getElementById('phoneStatus');
+  const mb = parseInt(document.getElementById('fileSizeThreshold').value);
+  el.textContent = `Ricerca file > ${mb}MB...`; el.className = 'status-line';
+
+  if (!useLocalServer) { el.textContent = '✗ Server Termux non attivo.'; el.className = 'status-line err'; return; }
+
+  const cmd = `find /storage/emulated/0 -type f -size +${mb}M 2>/dev/null | head -30 | while read f; do size=$(du -m "$f" | cut -f1); echo "$size MB|$f"; done | sort -rn`;
+
+  try {
+    const res = await fetch(DAN_SERVER + '/exec', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ command: cmd }),
+      signal: AbortSignal.timeout(30000)
+    });
+    const data = await res.json();
+    const lines = (data.stdout || '').trim().split('\n').filter(Boolean);
+    largeFilesFound = lines.map(l => {
+      const [size, ...parts] = l.split('|');
+      return { size: size.trim(), path: parts.join('|').trim(), selected: true };
+    });
+
+    if (!largeFilesFound.length) {
+      el.textContent = `Nessun file > ${mb}MB trovato.`; el.className = 'status-line warn';
+      document.getElementById('largeFilesCard').hidden = true;
+      return;
+    }
+    el.textContent = `${largeFilesFound.length} file trovati`; el.className = 'status-line ok';
+    renderLargeFiles();
+    document.getElementById('largeFilesCard').hidden = false;
+  } catch(e) { el.textContent = '✗ ' + e.message; el.className = 'status-line err'; }
+}
+
+function renderLargeFiles() {
+  const el = document.getElementById('largeFilesList');
+  el.innerHTML = largeFilesFound.map((f, i) => `
+    <div style="display:flex;align-items:center;gap:8px;padding:6px;background:rgba(0,0,0,0.3);border-radius:6px;border:1px solid var(--border)">
+      <input type="checkbox" id="fcheck_${i}" ${f.selected?'checked':''} onchange="largeFilesFound[${i}].selected=this.checked" style="accent-color:var(--cyan);flex-shrink:0">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:11px;color:var(--fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(f.path.split('/').pop())}</div>
+        <div style="font-size:10px;color:var(--fg-dim)">${escHtml(f.size)} MB · ${escHtml(f.path.replace('/storage/emulated/0','~'))}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function selectAllFiles(val) {
+  largeFilesFound.forEach((f,i) => { f.selected = val; const cb = document.getElementById('fcheck_'+i); if (cb) cb.checked = val; });
+}
+
+async function uploadSelectedFiles() {
+  const selected = largeFilesFound.filter(f => f.selected);
+  if (!selected.length) return;
+  const dest = document.getElementById('driveDestFolder').value.trim() || 'Backup Telefono';
+  const statusEl = document.getElementById('uploadStatus');
+
+  const fileList = selected.map(f => f.path).join('\n');
+  const confirmed = await showConfirm(
+    'CARICA E CANCELLA',
+    `Caricherò ${selected.length} file su Drive → "${dest}"\nPoi CANCELLERÒ gli originali dal telefono.\n\nFile:\n${fileList.slice(0,300)}${fileList.length>300?'\n…':''}`
+  );
+  if (!confirmed) { statusEl.textContent = 'Annullato.'; return; }
+
+  for (let i = 0; i < selected.length; i++) {
+    const f = selected[i];
+    statusEl.textContent = `Caricamento ${i+1}/${selected.length}: ${f.path.split('/').pop()}...`;
+    statusEl.className = 'status-line';
+
+    // 1. Carica
+    const uploadCmd = `rclone copy "${f.path}" "gdrive:${dest}/" --progress 2>&1 | tail -1`;
+    const up = await execOnTermux(uploadCmd);
+    if (up.exitCode !== 0) {
+      statusEl.textContent = `✗ Errore caricamento ${f.path.split('/').pop()}: ${up.stderr}`; statusEl.className = 'status-line err';
+      continue;
+    }
+
+    // 2. Verifica dimensione su Drive
+    const fname = f.path.split('/').pop();
+    const checkCmd = `rclone ls "gdrive:${dest}/${fname}" 2>/dev/null | awk '{print $1}'`;
+    const check = await execOnTermux(checkCmd);
+    const remoteSize = parseInt(check.stdout.trim()) || 0;
+    const localSizeCmdRes = await execOnTermux(`stat -c%s "${f.path}" 2>/dev/null`);
+    const localSize = parseInt(localSizeCmdRes.stdout.trim()) || 0;
+
+    if (remoteSize === 0 || Math.abs(remoteSize - localSize) > 1024) {
+      statusEl.textContent = `⚠ Verifica fallita per ${fname} — file NON cancellato.`; statusEl.className = 'status-line warn';
+      continue;
+    }
+
+    // 3. Cancella solo se verificato
+    const delCmd = `rm "${f.path}"`;
+    await execOnTermux(delCmd);
+  }
+
+  statusEl.textContent = `✓ Completato: ${selected.length} file gestiti.`; statusEl.className = 'status-line ok';
+  largeFilesFound = largeFilesFound.filter(f => !f.selected);
+  renderLargeFiles();
+  if (!largeFilesFound.length) document.getElementById('largeFilesCard').hidden = true;
+}
+
+async function execOnTermux(cmd) {
+  try {
+    const res = await fetch(DAN_SERVER + '/exec', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ command: cmd }), signal: AbortSignal.timeout(30000)
+    });
+    return await res.json();
+  } catch(e) { return { stdout: '', stderr: e.message, exitCode: -1 }; }
+}
+
+// ── PANEL NAV ─────────────────────────────────────────────────────
+function showPanel(name) {
+  document.querySelectorAll('.side-panel').forEach(p => p.hidden = true);
+  const p = document.getElementById('panel-' + name);
+  if (p) p.hidden = false;
+  if (name === 'settings') {
+    document.getElementById('serverUrlInput').value = DAN_SERVER;
+  }
+}
+
+function closePanel() {
+  document.querySelectorAll('.side-panel').forEach(p => p.hidden = true);
+}
+
+function showMainChat() {
+  closePanel();
+  document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active', i===0));
+}
+
+// ── SPEECH OUTPUT: DiegoNeural via Render, Android fallback ────────
+const DIEGO_VOICE_URL = 'https://dan-voice.onrender.com/speak';
+const audioEl = document.createElement('audio');
+audioEl.style.display = 'none';
+document.body.appendChild(audioEl);
+let speakQueue = [];
+let isSpeakingQueue = false;
+let voiceSession = 0;
+let voiceObjectUrl = null;
+let activeVoiceController = null;
+
+function releaseVoiceAudio() {
+  if (voiceObjectUrl) { URL.revokeObjectURL(voiceObjectUrl); voiceObjectUrl = null; }
+}
+function stopDanSpeech() {
+  voiceSession++;
+  speakQueue = [];
+  isSpeakingQueue = false;
+  if (activeVoiceController) { activeVoiceController.abort(); activeVoiceController = null; }
+  audioEl.pause();
+  audioEl.removeAttribute('src');
+  audioEl.load();
+  releaseVoiceAudio();
+  if (window.DanVoice && typeof window.DanVoice.stop === 'function') {
+    try { window.DanVoice.stop(); } catch(e) {}
+  }
+  setOrbState('idle');
+}
+function unlockVoice() {
+  voiceUnlocked = true;
+  document.getElementById('voiceBanner').hidden = true;
+  const bubbles = document.querySelectorAll('.msg.dan .msg-bubble');
+  if (bubbles.length > 0) speak(bubbles[bubbles.length-1].innerText);
+}
+function speak(text) {
+  if (!voiceUnlocked || !text || !text.trim()) return;
+  stopDanSpeech();
+  const sentences = text.match(/[^.!?\n]+[.!?\n]?/g) || [text];
+  let current = '';
+  for (const sentence of sentences) {
+    if ((current + sentence).length <= 350) current += sentence;
+    else {
+      if (current.trim()) speakQueue.push(current.trim());
+      current = sentence;
+      while (current.length > 350) {
+        speakQueue.push(current.slice(0, 350));
+        current = current.slice(350);
+      }
+    }
+  }
+  if (current.trim()) speakQueue.push(current.trim());
+  playNextChunk();
+}
+async function playNextChunk() {
+  if (isSpeakingQueue) return;
+  if (!speakQueue.length) { setOrbState('idle'); return; }
+  isSpeakingQueue = true;
+  setOrbState('speaking');
+  const session = voiceSession;
+  const chunk = speakQueue.shift();
+  const controller = new AbortController();
+  activeVoiceController = controller;
+  const timeout = setTimeout(() => controller.abort(), 18000);
+  try {
+    const res = await fetch(DIEGO_VOICE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: chunk }),
+      signal: controller.signal
+    });
+    if (!res.ok) throw new Error('Diego HTTP ' + res.status);
+    const blob = await res.blob();
+    if (!blob.size) throw new Error('Audio vuoto');
+    if (session !== voiceSession) return;
+    releaseVoiceAudio();
+    voiceObjectUrl = URL.createObjectURL(blob);
+    audioEl.src = voiceObjectUrl;
+    await audioEl.play();
+  } catch(e) {
+    if (session !== voiceSession) return;
+    // Android TTS is the offline fallback inside the installed APK.
+    if (window.DanVoice && typeof window.DanVoice.speak === 'function') {
+      try { window.DanVoice.speak(chunk); return; } catch(err) {}
+    }
+    // Browser fallback, if no native Android bridge is available.
+    try {
+      const fallback = 'https://translate.google.com/translate_tts?ie=UTF-8&tl=it&client=tw-ob&q=' + encodeURIComponent(chunk.slice(0,180));
+      audioEl.src = fallback;
+      await audioEl.play();
+    } catch(err) {
+      finishVoiceChunk(session);
+    }
+  } finally {
+    clearTimeout(timeout);
+    if (activeVoiceController === controller) activeVoiceController = null;
+  }
+}
+function finishVoiceChunk(session) {
+  if (session !== voiceSession) return;
+  releaseVoiceAudio();
+  isSpeakingQueue = false;
+  playNextChunk();
+}
+audioEl.addEventListener('ended', () => finishVoiceChunk(voiceSession));
+audioEl.addEventListener('error', () => {
+  if (isSpeakingQueue) finishVoiceChunk(voiceSession);
+});
+// Called by MainActivity's Android TTS bridge after fallback finishes.
+function danNativeDone() { if (isSpeakingQueue) finishVoiceChunk(voiceSession); }
+function speakFromServer(text) { speak(text); }
+
+// ── SPEECH INPUT ──────────────────────────────────────────────────
+function toggleVoice() {
+  if (isSpeakingQueue) { stopDanSpeech(); return; }
+  if (!isListening) startListening(); else stopListening();
+}
+
+function startListening() {
+  const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRec) { addMsg('dan', 'Riconoscimento vocale non disponibile. Usa Chrome su Android.'); return; }
+  recognition = new SpeechRec();
+  recognition.lang = 'it-IT';
+  recognition.interimResults = false;
+  recognition.maxAlternatives = 1;
+  recognition.onstart  = () => { isListening = true; setOrbState('listening'); };
+  recognition.onresult = (e) => {
+    const transcript = e.results[0][0].transcript;
+    document.getElementById('textInput').value = transcript;
+    stopListening(); sendText();
+  };
+  recognition.onerror = () => { isListening = false; setOrbState('idle'); };
+  recognition.onend   = () => { isListening = false; if (orbState === 'listening') setOrbState('idle'); };
+  recognition.start();
+}
+
+function stopListening() {
+  if (recognition) { try { recognition.stop(); } catch(e){} }
+  isListening = false;
+}
+
+// ── TEXT INPUT ────────────────────────────────────────────────────
+function sendText() {
+  const inp = document.getElementById('textInput');
+  const text = inp.value.trim();
+  if (!text || !apiKey) return;
+  inp.value = ''; autoResize(inp);
+  addMsg('user', text);
+  askDan(text);
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendText(); }
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 100) + 'px';
+}
+
+if (window.speechSynthesis) speechSynthesis.onvoiceschanged = () => {};
+</script>
+
+</body></html>
